@@ -1,0 +1,80 @@
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =========================
+# Environments
+# =========================
+
+.venv/
+venv/
+env/
+
+# =========================
+# Jupyter
+# =========================
+
+.ipynb_checkpoints/
+
+# =========================
+# VSCode / IDE
+# =========================
+
+.vscode/
+.idea/
+
+# =========================
+# Data
+# =========================
+
+data/audio/
+data/raw/
+
+# Feature datasets
+data/features/
+
+# Alternate feature dumps
+features_1/
+
+# =========================
+# Outputs
+# =========================
+
+outputs/checkpoints/
+outputs/logs/
+outputs/metrics/
+outputs/plots/
+outputs/beta_history/
+outputs/latent_stats/
+
+# Generated figures
+outputs/figures/
+
+# =========================
+# Model Files
+# =========================
+
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.onnx
+
+# =========================
+# Logs
+# =========================
+
+*.log
+
+# =========================
+# OS
+# =========================
+
+.DS_Store
+Thumbs.db
+Desktop.ini

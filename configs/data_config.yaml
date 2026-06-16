@@ -1,0 +1,54 @@
+project_name: audio_factor_disentanglement_v2
+
+audio_extensions:
+  - ".wav"
+  - ".ogg"
+  - ".m4a"
+
+dataset:
+
+  raw_dir: data/raw
+
+  processed_dir: data/processed
+
+  metadata_dir: data/metadata
+
+  fragment_dir: data/fragments
+
+  feature_dir: data/features
+
+outputs:
+
+  figures_dir: outputs/figures
+
+  checkpoint_dir: outputs/checkpoints
+
+  swap_dir: outputs/swaps
+
+audio:
+
+  target_sr: 16000
+
+  mono: true
+
+  normalize_peak: true
+
+fragmentation:
+
+  sample_rate: 16000
+
+  vad_top_db: 25
+
+  min_fragment_ms: 80
+
+  max_fragment_ms: 600
+
+  envelope_frame_length: 512
+
+  envelope_hop_length: 128
+
+  smoothing_window: 9
+
+  min_valley_distance_ms: 80
+
+  padding_percentile: 95
