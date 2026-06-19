@@ -87,7 +87,9 @@ class CheckpointManager:
 
         scheduler,
 
-        metrics
+        metrics,
+
+        factorvae_scheduler=None
     ):
 
         state = {
@@ -111,6 +113,20 @@ class CheckpointManager:
                 "scheduler"
             ] = scheduler.state_dict()
 
+        # ----------------------------------
+        # FactorVAE discriminator
+        # ----------------------------------
+
+        if factorvae_scheduler is not None:
+
+            state[
+                "factorvae"
+            ] = (
+
+                factorvae_scheduler
+                .state_dict()
+            )
+
         return state
 
     def save_latest(
@@ -125,7 +141,9 @@ class CheckpointManager:
 
         scheduler,
 
-        metrics
+        metrics,
+
+        factorvae_scheduler=None
     ):
 
         state = self.checkpoint_state(
@@ -138,19 +156,18 @@ class CheckpointManager:
 
             scheduler,
 
-            metrics
+            metrics,
+
+            factorvae_scheduler
         )
 
-        path = (
+        torch.save(
+
+            state,
 
             self.checkpoint_dir
             /
             "latest.pt"
-        )
-
-        torch.save(
-            state,
-            path
         )
 
     def save_epoch(
@@ -165,12 +182,15 @@ class CheckpointManager:
 
         scheduler,
 
-        metrics
+        metrics,
+
+        factorvae_scheduler=None
     ):
 
         if (
 
-            epoch %
+            epoch
+            %
             self.save_every
 
             != 0
@@ -188,7 +208,9 @@ class CheckpointManager:
 
             scheduler,
 
-            metrics
+            metrics,
+
+            factorvae_scheduler
         )
 
         path = (
@@ -219,14 +241,12 @@ class CheckpointManager:
 
         scheduler,
 
-        metrics
+        metrics,
+
+        factorvae_scheduler=None
     ):
 
-        if (
-
-            self.best_metric
-            is None
-        ):
+        if self.best_metric is None:
 
             self.best_metric = (
                 metric_value
@@ -243,20 +263,19 @@ class CheckpointManager:
                 metric_value
             )
 
-            state = (
+            state = self.checkpoint_state(
 
-                self.checkpoint_state(
+                epoch,
 
-                    epoch,
+                model,
 
-                    model,
+                optimizer,
 
-                    optimizer,
+                scheduler,
 
-                    scheduler,
+                metrics,
 
-                    metrics
-                )
+                factorvae_scheduler
             )
 
             path = (
@@ -308,17 +327,15 @@ class CheckpointManager:
             ckpt.unlink()
 
     def load(
+
         self,
+
         checkpoint_path
     ):
 
-        checkpoint_path = Path(
-            checkpoint_path
-        )
-
         return torch.load(
 
-            checkpoint_path,
+            Path(checkpoint_path),
 
             map_location="cpu"
         )
@@ -333,7 +350,9 @@ class CheckpointManager:
 
         optimizer=None,
 
-        scheduler=None
+        scheduler=None,
+
+        factorvae_scheduler=None
     ):
 
         state = self.load(
@@ -376,6 +395,28 @@ class CheckpointManager:
 
                 state[
                     "scheduler"
+                ]
+            )
+
+        # ----------------------------------
+        # FactorVAE restore
+        # ----------------------------------
+
+        if (
+
+            factorvae_scheduler
+            is not None
+
+            and
+
+            "factorvae"
+            in state
+        ):
+
+            factorvae_scheduler.load_state_dict(
+
+                state[
+                    "factorvae"
                 ]
             )
 

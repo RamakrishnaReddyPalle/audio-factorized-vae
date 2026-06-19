@@ -16,6 +16,14 @@ class FactorVAEDiscriminator(
 
         super().__init__()
 
+        self.latent_dim = (
+            latent_dim
+        )
+
+        self.hidden_dim = (
+            hidden_dim
+        )
+
         self.net = nn.Sequential(
 
             nn.Linear(
@@ -59,6 +67,26 @@ class FactorVAEDiscriminator(
         z
     ):
 
-        return self.net(
+        if z.ndim != 2:
+
+            raise ValueError(
+
+                f"FactorVAEDiscriminator "
+                f"expected [B,D], got "
+                f"{tuple(z.shape)}"
+            )
+
+        if z.shape[-1] != self.latent_dim:
+
+            raise ValueError(
+
+                f"Expected latent dim "
+                f"{self.latent_dim}, got "
+                f"{z.shape[-1]}"
+            )
+
+        logits = self.net(
             z
         )
+
+        return logits

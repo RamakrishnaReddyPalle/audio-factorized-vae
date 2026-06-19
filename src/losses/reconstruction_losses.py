@@ -31,6 +31,8 @@ class ReconstructionLoss(nn.Module):
         self.current_epoch = 0
         self.total_epochs = 1
 
+        self.last_phase_state = None
+
         loss_cfg = (
             cfg["losses"]["reconstruction"]
         )
@@ -180,6 +182,58 @@ class ReconstructionLoss(nn.Module):
 
         metrics = {}
 
+        phase_active = (
+            self.phase_enabled()
+        )
+
+        metrics[
+            "phase_enabled"
+        ] = float(
+            phase_active
+        )
+
+        metrics[
+            "phase_progress"
+        ] = float(
+
+            self.current_epoch
+
+            /
+
+            max(
+                1,
+                self.total_epochs
+            )
+        )
+
+        if phase_active != self.last_phase_state:
+
+            print()
+
+            print(
+                "[PHASE ACTIVATION]"
+            )
+
+            print(
+                f"epoch={self.current_epoch}"
+            )
+
+            print(
+                f"progress={metrics['phase_progress']:.4f}"
+            )
+
+            print(
+                f"enabled={phase_active}"
+            )
+
+            self.last_phase_state = (
+                phase_active
+            )
+
+        # ----------------------------------
+        # Feature Reconstruction
+        # ----------------------------------
+
         for feature_name in reconstructions:
 
             pred = (
@@ -238,7 +292,11 @@ class ReconstructionLoss(nn.Module):
             ]
         )
 
-        if self.phase_enabled():
+        # ----------------------------------
+        # Phase Losses
+        # ----------------------------------
+
+        if phase_active:
 
             derivative_metrics = (
 
@@ -346,6 +404,34 @@ class ReconstructionLoss(nn.Module):
             metrics[
                 "phase_continuity"
             ] = continuity
+
+            if self.current_epoch % 10 == 0:
+
+                print()
+
+                print(
+                    "[PHASE DIAGNOSTICS]"
+                )
+
+                print(
+                    f"phase_derivative={derivative_loss.item():.6f}"
+                )
+
+                print(
+                    f"derived_if={metrics['derived_if_loss'].item():.6f}"
+                )
+
+                print(
+                    f"derived_gd={metrics['derived_gd_loss'].item():.6f}"
+                )
+
+                print(
+                    f"von_mises={von_mises.item():.6f}"
+                )
+
+                print(
+                    f"phase_continuity={continuity.item():.6f}"
+                )
 
         else:
 

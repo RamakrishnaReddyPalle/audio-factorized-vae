@@ -15,14 +15,13 @@ class OrthogonalityLoss(
         super().__init__()
 
     def pair_loss(
+
         self,
+
         z1,
+
         z2
     ):
-
-        # ----------------------------------
-        # project to common size
-        # ----------------------------------
 
         common_dim = min(
 
@@ -36,12 +35,16 @@ class OrthogonalityLoss(
         z2 = z2[..., :common_dim]
 
         z1 = F.normalize(
+
             z1,
+
             dim=-1
         )
 
         z2 = F.normalize(
+
             z2,
+
             dim=-1
         )
 
@@ -54,11 +57,15 @@ class OrthogonalityLoss(
         )
 
         return (
+
             similarity.pow(2)
+
         ).mean()
 
     def forward(
+
         self,
+
         latents
     ):
 
@@ -70,31 +77,82 @@ class OrthogonalityLoss(
 
         zx = latents["excitation"]
 
-        loss = 0.0
+        zf = latents["fidelity"]
 
-        loss += self.pair_loss(
-            zc,
-            zs
+        pair_losses = {}
+
+        pair_losses["content_speaker"] = (
+            self.pair_loss(
+                zc,
+                zs
+            )
         )
 
-        loss += self.pair_loss(
-            zc,
-            ze
+        pair_losses["content_environment"] = (
+            self.pair_loss(
+                zc,
+                ze
+            )
         )
 
-        loss += self.pair_loss(
-            zs,
-            ze
+        pair_losses["content_excitation"] = (
+            self.pair_loss(
+                zc,
+                zx
+            )
         )
 
-        loss += self.pair_loss(
-            zs,
-            zx
+        pair_losses["content_fidelity"] = (
+            self.pair_loss(
+                zc,
+                zf
+            )
         )
 
-        loss += self.pair_loss(
-            ze,
-            zx
+        pair_losses["speaker_environment"] = (
+            self.pair_loss(
+                zs,
+                ze
+            )
         )
 
-        return loss
+        pair_losses["speaker_excitation"] = (
+            self.pair_loss(
+                zs,
+                zx
+            )
+        )
+
+        pair_losses["speaker_fidelity"] = (
+            self.pair_loss(
+                zs,
+                zf
+            )
+        )
+
+        pair_losses["environment_excitation"] = (
+            self.pair_loss(
+                ze,
+                zx
+            )
+        )
+
+        pair_losses["environment_fidelity"] = (
+            self.pair_loss(
+                ze,
+                zf
+            )
+        )
+
+        pair_losses["excitation_fidelity"] = (
+            self.pair_loss(
+                zx,
+                zf
+            )
+        )
+
+        total_loss = sum(
+            pair_losses.values()
+        )
+
+        return total_loss

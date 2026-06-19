@@ -19,9 +19,13 @@ def validate_epoch(
 
     latent_monitor,
 
+    factorvae_scheduler,
+
     device,
 
-    cfg
+    cfg,
+
+    epoch
 ):
 
     model.eval()
@@ -50,7 +54,7 @@ def validate_epoch(
                     else v
                 )
 
-                for k,v in batch.items()
+                for k, v in batch.items()
             }
 
             with autocast(
@@ -62,11 +66,50 @@ def validate_epoch(
                     batch
                 )
 
+                # ----------------------------------
+                # TC logits from current
+                # discriminator state
+                # ----------------------------------
+
+                tc_logits = None
+                tc_logits_permuted = None
+
+                if (
+
+                    factorvae_scheduler
+                    is not None
+                ):
+
+                    tc_outputs = (
+
+                        factorvae_scheduler
+                        .generator_logits(
+
+                            outputs[
+                                "joint_latent"
+                            ]
+                        )
+                    )
+
+                    tc_logits = (
+                        tc_outputs["real"]
+                    )
+
+                    tc_logits_permuted = (
+                        tc_outputs["permuted"]
+                    )
+
                 loss_dict = loss_fn(
 
                     outputs,
 
-                    batch
+                    batch,
+
+                    tc_logits=
+                    tc_logits,
+
+                    tc_logits_permuted=
+                    tc_logits_permuted
                 )
 
             metrics_tracker.update(
@@ -77,7 +120,7 @@ def validate_epoch(
 
                 latent_monitor.monitor(
 
-                    epoch=0,
+                    epoch=epoch,
 
                     latents=
                     outputs["latents"]

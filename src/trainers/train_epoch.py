@@ -3,8 +3,7 @@
 import torch
 
 from torch.cuda.amp import (
-    autocast,
-    GradScaler
+    autocast
 )
 
 
@@ -22,9 +21,13 @@ def train_epoch(
 
     latent_monitor,
 
+    factorvae_scheduler,
+
     device,
 
     cfg,
+
+    epoch,
 
     scaler=None
 ):
@@ -47,6 +50,10 @@ def train_epoch(
         ["enabled"]
     )
 
+    disc_loss_history = []
+    disc_real_acc_history = []
+    disc_perm_acc_history = []
+
     for batch in loader:
 
         batch = {
@@ -59,7 +66,7 @@ def train_epoch(
                 else v
             )
 
-            for k,v in batch.items()
+            for k, v in batch.items()
         }
 
         optimizer.zero_grad(
@@ -75,16 +82,84 @@ def train_epoch(
                 batch
             )
 
+        # --------------------------------------------------
+        # FactorVAE Discriminator Update
+        # --------------------------------------------------
+
+        disc_stats = (
+
+            factorvae_scheduler
+            .discriminator_step(
+
+                outputs[
+                    "joint_latent"
+                ]
+            )
+        )
+
+        disc_loss_history.append(
+
+            float(
+                disc_stats[
+                    "disc_loss"
+                ]
+            )
+        )
+
+        disc_real_acc_history.append(
+
+            float(
+                disc_stats[
+                    "disc_real_acc"
+                ]
+            )
+        )
+
+        disc_perm_acc_history.append(
+
+            float(
+                disc_stats[
+                    "disc_perm_acc"
+                ]
+            )
+        )
+
+        # --------------------------------------------------
+        # Generator TC logits
+        # --------------------------------------------------
+
+        with autocast(
+
+            enabled=amp_enabled
+        ):
+
+            tc_logits = (
+
+                factorvae_scheduler
+                .generator_logits(
+
+                    outputs[
+                        "joint_latent"
+                    ]
+                )
+            )
+
             loss_dict = loss_fn(
 
                 outputs,
 
-                batch
+                batch,
+
+                tc_logits=tc_logits
             )
 
             loss = loss_dict[
                 "total"
             ]
+
+        # --------------------------------------------------
+        # Generator Update
+        # --------------------------------------------------
 
         if scaler is not None:
 
@@ -122,6 +197,28 @@ def train_epoch(
 
             optimizer.step()
 
+        # --------------------------------------------------
+        # Diagnostics
+        # --------------------------------------------------
+
+        loss_dict[
+            "disc_loss"
+        ] = sum(
+            disc_loss_history[-1:]
+        )
+
+        loss_dict[
+            "disc_real_acc"
+        ] = sum(
+            disc_real_acc_history[-1:]
+        )
+
+        loss_dict[
+            "disc_perm_acc"
+        ] = sum(
+            disc_perm_acc_history[-1:]
+        )
+
         metrics_tracker.update(
             loss_dict
         )
@@ -130,21 +227,51 @@ def train_epoch(
 
             latent_monitor.monitor(
 
-                epoch=0,
+                epoch=epoch,
 
                 latents=
-                outputs["latents"]
+                outputs[
+                    "latents"
+                ]
             )
+        )
+
+    metrics = (
+        metrics_tracker
+        .averages()
+    )
+
+    if len(disc_loss_history) > 0:
+
+        metrics[
+            "disc_loss"
+        ] = sum(
+            disc_loss_history
+        ) / len(
+            disc_loss_history
+        )
+
+        metrics[
+            "disc_real_acc"
+        ] = sum(
+            disc_real_acc_history
+        ) / len(
+            disc_real_acc_history
+        )
+
+        metrics[
+            "disc_perm_acc"
+        ] = sum(
+            disc_perm_acc_history
+        ) / len(
+            disc_perm_acc_history
         )
 
     return {
 
         "metrics":
-
-            metrics_tracker
-            .averages(),
+            metrics,
 
         "latent_report":
-
             last_latent_report
     }

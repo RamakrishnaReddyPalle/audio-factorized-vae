@@ -36,6 +36,8 @@ class TotalLoss(
         self.current_epoch = 0
         self.total_epochs = 1
 
+        self.last_flags = None
+
         self.reconstruction = (
             ReconstructionLoss(cfg)
         )
@@ -153,21 +155,66 @@ class TotalLoss(
 
         outputs,
 
-        targets,
-
-        tc_logits=None
+        targets
     ):
 
         flags = (
             self.activation_flags()
         )
 
+        progress = (
+
+            self.current_epoch
+
+            /
+
+            max(
+                1,
+                self.total_epochs
+            )
+        )
+
+        if flags != self.last_flags:
+
+            print()
+            print("=" * 70)
+            print("[LOSS ACTIVATION STATE]")
+            print("=" * 70)
+
+            print(
+                f"epoch={self.current_epoch}"
+            )
+
+            print(
+                f"progress={progress:.4f}"
+            )
+
+            print(
+                f"phase={flags['phase']}"
+            )
+
+            print(
+                f"kl={flags['kl']}"
+            )
+
+            print(
+                f"orthogonality={flags['orthogonality']}"
+            )
+
+            print(
+                f"tc={flags['tc']}"
+            )
+
+            self.last_flags = (
+                flags.copy()
+            )
+
         loss_dict = {}
 
         total = 0.0
 
         # ----------------------------------
-        # Sync reconstruction stage state
+        # Sync reconstruction state
         # ----------------------------------
 
         self.reconstruction.current_epoch = (
@@ -249,12 +296,14 @@ class TotalLoss(
         # KL
         # ----------------------------------
 
+        kl_total = torch.tensor(
+            0.0,
+            device=recon_loss.device
+        )
+
         if flags["kl"]:
 
-            for latent_name in (
-
-                outputs["mu"]
-            ):
+            for latent_name in outputs["mu"]:
 
                 mu = (
                     outputs["mu"]
@@ -280,29 +329,54 @@ class TotalLoss(
                     [latent_name]
                 )
 
+                kl_total += (
+                    beta * kl
+                )
+
                 total += (
-                    beta
-                    *
-                    kl
+                    beta * kl
                 )
 
                 loss_dict[
                     f"{latent_name}_kl"
                 ] = kl
 
+                loss_dict[
+                    f"{latent_name}_beta"
+                ] = torch.tensor(
+                    float(beta),
+                    device=kl.device
+                )
+
+            if self.current_epoch % 10 == 0:
+
+                print()
+                print(
+                    "[KL DIAGNOSTICS]"
+                )
+
+                for latent_name in outputs["mu"]:
+
+                    print(
+                        latent_name,
+                        f"KL={loss_dict[f'{latent_name}_kl'].item():.6f}",
+                        f"BETA={loss_dict[f'{latent_name}_beta'].item():.6f}"
+                    )
+
         else:
 
-            for latent_name in (
-
-                outputs["mu"]
-            ):
+            for latent_name in outputs["mu"]:
 
                 loss_dict[
                     f"{latent_name}_kl"
                 ] = torch.tensor(
                     0.0,
-                    device=total.device
+                    device=recon_loss.device
                 )
+
+        loss_dict[
+            "kl_total"
+        ] = kl_total
 
         # ----------------------------------
         # Orthogonality
@@ -333,18 +407,40 @@ class TotalLoss(
                 "orthogonality"
             ] = ortho
 
+            if self.current_epoch % 10 == 0:
+
+                print()
+
+                print(
+                    "[ORTHOGONALITY]"
+                )
+
+                print(
+                    f"loss={ortho.item():.6f}"
+                )
+
         else:
 
             loss_dict[
                 "orthogonality"
             ] = torch.tensor(
                 0.0,
-                device=total.device
+                device=recon_loss.device
             )
 
         # ----------------------------------
-        # TC
+        # Total Correlation
         # ----------------------------------
+
+        tc_logits = outputs.get(
+            "tc_logits",
+            None
+        )
+
+        tc_logits_permuted = outputs.get(
+            "tc_logits_permuted",
+            None
+        )
 
         if (
 
@@ -353,11 +449,25 @@ class TotalLoss(
             and
 
             tc_logits is not None
+
+            and
+
+            tc_logits_permuted is not None
         ):
 
-            tc = self.factorvae(
-                tc_logits
+            tc_result = (
+
+                self.factorvae(
+
+                    tc_logits,
+
+                    tc_logits_permuted
+                )
             )
+
+            tc = tc_result[
+                "tc_loss"
+            ]
 
             total += tc
 
@@ -365,13 +475,45 @@ class TotalLoss(
                 "tc"
             ] = tc
 
+            if (
+                "discriminator_loss"
+                in tc_result
+            ):
+
+                loss_dict[
+                    "discriminator_loss"
+                ] = tc_result[
+                    "discriminator_loss"
+                ]
+
+            if self.current_epoch % 10 == 0:
+
+                print()
+
+                print(
+                    "[TC DIAGNOSTICS]"
+                )
+
+                print(
+                    f"tc={tc.item():.6f}"
+                )
+
+                if (
+                    "discriminator_loss"
+                    in tc_result
+                ):
+
+                    print(
+                        f"disc={tc_result['discriminator_loss'].item():.6f}"
+                    )
+
         else:
 
             loss_dict[
                 "tc"
             ] = torch.tensor(
                 0.0,
-                device=total.device
+                device=recon_loss.device
             )
 
         # ----------------------------------

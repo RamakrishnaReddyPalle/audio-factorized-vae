@@ -24,6 +24,10 @@ from src.trainers.beta_scheduler import (
     BetaScheduler
 )
 
+from src.trainers.factorvae_scheduler import (
+    FactorVAEScheduler
+)
+
 from src.trainers.checkpoint_manager import (
     CheckpointManager
 )
@@ -101,6 +105,21 @@ class Trainer:
             )
         )
 
+        self.factorvae_scheduler = (
+
+            FactorVAEScheduler(
+
+                project_root=
+                project_root,
+
+                model=
+                model,
+
+                device=
+                device
+            )
+        )
+
         self.checkpoints = (
 
             CheckpointManager(
@@ -174,21 +193,14 @@ class Trainer:
         ):
 
             print()
-
+            print("=" * 80)
             print(
-                "=" * 80
+                f"Epoch {epoch}/{epochs}"
             )
-
-            print(
-                f"Epoch {epoch}"
-            )
-
-            print(
-                "=" * 80
-            )
+            print("=" * 80)
 
             # --------------------------------------------------
-            # Beta Warmup
+            # KL Beta Scheduler
             # --------------------------------------------------
 
             beta_dict = (
@@ -199,15 +211,58 @@ class Trainer:
                 )
             )
 
-            self.loss_fn.current_epoch = epoch
+            self.loss_fn.current_epoch = (
+                epoch
+            )
 
-            self.loss_fn.total_epochs = epochs
+            self.loss_fn.total_epochs = (
+                epochs
+            )
 
             self.loss_fn.cfg[
                 "losses"
             ][
                 "kl"
             ] = beta_dict
+
+            # --------------------------------------------------
+            # Diagnostics
+            # --------------------------------------------------
+
+            print()
+            print(
+                "KL Betas:"
+            )
+
+            for name, value in (
+
+                beta_dict.items()
+            ):
+
+                print(
+
+                    f"  {name:<12}"
+
+                    f"{value:.6f}"
+                )
+
+            progress = (
+
+                epoch
+
+                /
+
+                max(
+                    1,
+                    epochs
+                )
+            )
+
+            print()
+            print(
+                f"Training Progress: "
+                f"{progress:.3f}"
+            )
 
             # --------------------------------------------------
             # Memory Tracking
@@ -237,11 +292,17 @@ class Trainer:
                     latent_monitor=
                         self.latent_monitor,
 
+                    factorvae_scheduler=
+                        self.factorvae_scheduler,
+
                     device=
                         self.device,
 
                     cfg=
                         self.cfg,
+
+                    epoch=
+                        epoch,
 
                     scaler=
                         self.scaler
@@ -271,7 +332,10 @@ class Trainer:
                         self.device,
 
                     cfg=
-                        self.cfg
+                        self.cfg,
+
+                    epoch=
+                        epoch
                 )
             )
 
@@ -279,20 +343,26 @@ class Trainer:
                 self.memory_monitor.end_epoch()
             )
 
-            train_loss = (
-
+            train_metrics = (
                 train_result[
                     "metrics"
-                ][
+                ]
+            )
+
+            val_metrics = (
+                val_result[
+                    "metrics"
+                ]
+            )
+
+            train_loss = (
+                train_metrics[
                     "total"
                 ]
             )
 
             val_loss = (
-
-                val_result[
-                    "metrics"
-                ][
+                val_metrics[
                     "total"
                 ]
             )
@@ -300,12 +370,37 @@ class Trainer:
             print()
 
             print(
-                f"Train Loss: {train_loss:.4f}"
+                f"Train Loss: "
+                f"{train_loss:.4f}"
             )
 
             print(
-                f"Val Loss:   {val_loss:.4f}"
+                f"Val Loss:   "
+                f"{val_loss:.4f}"
             )
+
+            # --------------------------------------------------
+            # FactorVAE Diagnostics
+            # --------------------------------------------------
+
+            if "disc_loss" in train_metrics:
+
+                print()
+
+                print(
+                    f"Disc Loss      : "
+                    f"{train_metrics['disc_loss']:.4f}"
+                )
+
+                print(
+                    f"Disc Real Acc  : "
+                    f"{train_metrics['disc_real_acc']:.4f}"
+                )
+
+                print(
+                    f"Disc Perm Acc  : "
+                    f"{train_metrics['disc_perm_acc']:.4f}"
+                )
 
             print()
 
@@ -320,9 +415,17 @@ class Trainer:
                 ]
             )
 
+            # --------------------------------------------------
+            # LR Scheduler
+            # --------------------------------------------------
+
             if self.scheduler is not None:
 
                 self.scheduler.step()
+
+            # --------------------------------------------------
+            # Checkpoints
+            # --------------------------------------------------
 
             self.checkpoints.save_latest(
 
@@ -334,9 +437,10 @@ class Trainer:
 
                 self.scheduler,
 
-                val_result[
-                    "metrics"
-                ]
+                val_metrics,
+
+                factorvae_scheduler=
+                self.factorvae_scheduler
             )
 
             self.checkpoints.save_epoch(
@@ -349,9 +453,10 @@ class Trainer:
 
                 self.scheduler,
 
-                val_result[
-                    "metrics"
-                ]
+                val_metrics,
+
+                factorvae_scheduler=
+                self.factorvae_scheduler
             )
 
             self.checkpoints.save_best(
@@ -366,16 +471,17 @@ class Trainer:
 
                 self.scheduler,
 
-                val_result[
-                    "metrics"
-                ]
+                val_metrics,
+
+                factorvae_scheduler=
+                self.factorvae_scheduler
             )
 
-            if (
+            # --------------------------------------------------
+            # Early Stopping
+            # --------------------------------------------------
 
-                self.best_loss
-                is None
-            ):
+            if self.best_loss is None:
 
                 self.best_loss = (
                     val_loss

@@ -10,31 +10,68 @@ def permute_dims(
     FactorVAE latent permutation.
 
     Input:
-        [B,D]
+        z : [B, D]
 
     Output:
-        [B,D]
+        [B, D]
 
     Each latent dimension is
-    independently shuffled.
+    independently shuffled across
+    the batch dimension.
+
+    This destroys inter-dimension
+    dependencies while preserving
+    marginal distributions.
     """
 
-    B, D = z.shape
+    if z.ndim != 2:
 
-    permuted = []
+        raise ValueError(
 
-    for d in range(D):
+            f"permute_dims expected "
+            f"[B,D] tensor, got "
+            f"{tuple(z.shape)}"
+        )
 
-        idx = torch.randperm(
-            B,
+    batch_size, latent_dim = z.shape
+
+    # ----------------------------------
+    # Batch size 1
+    #
+    # Cannot permute meaningfully.
+    #
+    # Return clone to avoid accidental
+    # in-place interactions later.
+    # ----------------------------------
+
+    if batch_size <= 1:
+
+        return z.clone()
+
+    permuted_dims = []
+
+    for d in range(
+        latent_dim
+    ):
+
+        permutation = torch.randperm(
+
+            batch_size,
+
             device=z.device
         )
 
-        permuted.append(
-            z[idx, d]
+        permuted_dims.append(
+
+            z[
+                permutation,
+                d
+            ]
         )
 
     return torch.stack(
-        permuted,
+
+        permuted_dims,
+
         dim=1
     )

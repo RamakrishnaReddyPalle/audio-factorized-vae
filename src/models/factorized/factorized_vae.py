@@ -36,7 +36,9 @@ from src.models.factorized.feature_group_manager import (
 )
 
 
-class FactorizedVAE(nn.Module):
+class FactorizedVAE(
+    nn.Module
+):
 
     def __init__(
         self,
@@ -132,6 +134,22 @@ class FactorizedVAE(nn.Module):
             logvar
         )
 
+    def build_joint_latent(
+        self,
+        latents
+    ):
+
+        return torch.cat(
+            [
+                latents["content"],
+                latents["speaker"],
+                latents["environment"],
+                latents["excitation"],
+                latents["fidelity"]
+            ],
+            dim=-1
+        )
+
     def decode(
 
         self,
@@ -181,6 +199,13 @@ class FactorizedVAE(nn.Module):
             )
         )
 
+        joint_latent = (
+
+            self.build_joint_latent(
+                latents
+            )
+        )
+
         target_lengths = {
 
             "logmel":
@@ -224,5 +249,8 @@ class FactorizedVAE(nn.Module):
                 logvar,
 
             "reconstructions":
-                reconstructions
+                reconstructions,
+
+            "joint_latent":
+                joint_latent
         }

@@ -1,5 +1,6 @@
 # src/trainers/latent_monitor.py
 
+
 from pathlib import Path
 
 import torch
@@ -67,6 +68,8 @@ class LatentMonitor:
         z
     ):
 
+        z = z.detach()
+
         variance = torch.var(
 
             z,
@@ -90,38 +93,61 @@ class LatentMonitor:
             self.variance_threshold
         )
 
+        mean_value = (
+            z.mean().item()
+        )
+
+        std_value = (
+            z.std().item()
+        )
+
+        avg_variance = (
+            variance.mean().item()
+        )
+
+        collapse_ratio = float(
+            dead.float().mean()
+        )
+
+        collapsed = (
+
+            avg_variance
+            <
+            self.collapse_threshold
+        )
+
         return {
 
             "mean":
-
-                z.mean().item(),
+                mean_value,
 
             "std":
-
-                z.std().item(),
+                std_value,
 
             "avg_variance":
-
-                variance.mean().item(),
+                avg_variance,
 
             "active_dims":
-
                 int(
                     active.sum()
                 ),
 
             "dead_dims":
-
                 int(
                     dead.sum()
                 ),
 
             "collapse_ratio":
+                collapse_ratio,
 
-                float(
-                    dead.float()
-                    .mean()
-                )
+            "collapsed":
+                collapsed,
+
+            "min_variance":
+                variance.min().item(),
+
+            "max_variance":
+                variance.max().item()
         }
 
     def monitor(
@@ -148,9 +174,13 @@ class LatentMonitor:
 
             return {}
 
-        report = {}
+        report = {
 
-        for name,data in (
+            "epoch":
+                epoch
+        }
+
+        for name, data in (
 
             latents.items()
         ):
@@ -160,7 +190,13 @@ class LatentMonitor:
                 dict
             ):
 
-                z = data["z"]
+                if "z" in data:
+
+                    z = data["z"]
+
+                else:
+
+                    continue
 
             else:
 
@@ -193,17 +229,21 @@ class LatentMonitor:
         )
 
         print(
-            "LATENT MONITOR"
+            f"LATENT MONITOR | Epoch {report.get('epoch', '?')}"
         )
 
         print(
             "=" * 60
         )
 
-        for name,stats in (
+        for name, stats in (
 
             report.items()
         ):
+
+            if name == "epoch":
+
+                continue
 
             print()
 
@@ -228,6 +268,16 @@ class LatentMonitor:
 
             print(
 
+                f"min_var={stats['min_variance']:.6f}"
+            )
+
+            print(
+
+                f"max_var={stats['max_variance']:.6f}"
+            )
+
+            print(
+
                 f"active={stats['active_dims']}"
             )
 
@@ -239,4 +289,9 @@ class LatentMonitor:
             print(
 
                 f"collapse={stats['collapse_ratio']:.3f}"
+            )
+
+            print(
+
+                f"collapsed={stats['collapsed']}"
             )
