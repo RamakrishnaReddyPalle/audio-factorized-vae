@@ -328,6 +328,9 @@ class Trainer:
                     latent_monitor=
                         self.latent_monitor,
 
+                    factorvae_scheduler=
+                        self.factorvae_scheduler,
+
                     device=
                         self.device,
 

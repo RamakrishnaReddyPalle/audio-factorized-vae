@@ -225,6 +225,14 @@ class TotalLoss(
             self.total_epochs
         )
 
+        self.factorvae.current_epoch = (
+            self.current_epoch
+        )
+
+        self.factorvae.total_epochs = (
+            self.total_epochs
+        )
+
         # ----------------------------------
         # Reconstruction
         # ----------------------------------

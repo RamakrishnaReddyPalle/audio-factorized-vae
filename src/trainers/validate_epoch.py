@@ -71,9 +71,6 @@ def validate_epoch(
                 # discriminator state
                 # ----------------------------------
 
-                tc_logits = None
-                tc_logits_permuted = None
-
                 if (
 
                     factorvae_scheduler
@@ -91,25 +88,23 @@ def validate_epoch(
                         )
                     )
 
-                    tc_logits = (
-                        tc_outputs["real"]
-                    )
+                    outputs[
+                        "tc_logits"
+                    ] = tc_outputs[
+                        "real"
+                    ]
 
-                    tc_logits_permuted = (
-                        tc_outputs["permuted"]
-                    )
+                    outputs[
+                        "tc_logits_permuted"
+                    ] = tc_outputs[
+                        "permuted"
+                    ]
 
                 loss_dict = loss_fn(
 
                     outputs,
 
-                    batch,
-
-                    tc_logits=
-                    tc_logits,
-
-                    tc_logits_permuted=
-                    tc_logits_permuted
+                    batch
                 )
 
             metrics_tracker.update(
@@ -123,7 +118,9 @@ def validate_epoch(
                     epoch=epoch,
 
                     latents=
-                    outputs["latents"]
+                    outputs[
+                        "latents"
+                    ]
                 )
             )
 

@@ -133,7 +133,7 @@ def train_epoch(
             enabled=amp_enabled
         ):
 
-            tc_logits = (
+            tc_outputs = (
 
                 factorvae_scheduler
                 .generator_logits(
@@ -144,13 +144,23 @@ def train_epoch(
                 )
             )
 
+            outputs[
+                "tc_logits"
+            ] = tc_outputs[
+                "real"
+            ]
+
+            outputs[
+                "tc_logits_permuted"
+            ] = tc_outputs[
+                "permuted"
+            ]
+
             loss_dict = loss_fn(
 
                 outputs,
 
-                batch,
-
-                tc_logits=tc_logits
+                batch
             )
 
             loss = loss_dict[

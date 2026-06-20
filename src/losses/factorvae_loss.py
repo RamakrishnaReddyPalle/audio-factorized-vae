@@ -18,6 +18,13 @@ class FactorVAELoss(
 
         self.gamma = gamma
 
+        # ----------------------------------
+        # Injected from TotalLoss
+        # ----------------------------------
+
+        self.current_epoch = 0
+        self.total_epochs = 1
+
     def discriminator_loss(
 
         self,
@@ -26,13 +33,6 @@ class FactorVAELoss(
 
         permuted_logits
     ):
-
-        # ----------------------------------
-        # Must match FactorVAEScheduler
-        #
-        # real latent      -> class 1
-        # permuted latent  -> class 0
-        # ----------------------------------
 
         real_labels = torch.ones(
 
@@ -93,6 +93,29 @@ class FactorVAELoss(
 
         ).mean()
 
+    def tc_scale(
+        self
+    ):
+
+        progress = (
+
+            self.current_epoch
+
+            /
+
+            max(
+                1,
+                self.total_epochs
+            )
+        )
+
+        return min(
+
+            1.0,
+
+            progress / 0.70
+        )
+
     def forward(
 
         self,
@@ -107,9 +130,17 @@ class FactorVAELoss(
             real_logits
         )
 
+        scale = (
+            self.tc_scale()
+        )
+
         tc_loss = (
 
             self.gamma
+
+            *
+
+            scale
 
             *
 
@@ -122,7 +153,13 @@ class FactorVAELoss(
                 tc_loss,
 
             "tc_estimate":
-                tc_est.detach()
+                tc_est.detach(),
+
+            "tc_scale":
+                torch.tensor(
+                    float(scale),
+                    device=real_logits.device
+                )
         }
 
         if permuted_logits is not None:
