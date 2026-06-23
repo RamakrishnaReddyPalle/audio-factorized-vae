@@ -1,0 +1,29 @@
+feature_extraction:
+  sample_rate: 16000
+  save_dtype: float32
+  eps: 1e-8
+  stft:
+    n_fft: 1024
+    win_length: 1024
+    hop_length: 64
+    window: hann
+  mel:
+    n_mels: 80
+    fmin: 20
+    fmax: 8000
+  multiresolution:
+    fft_sizes:
+    - 256
+    - 512
+    - 1024
+    hop_lengths:
+    - 32
+    - 64
+    - 128
+    win_lengths:
+    - 256
+    - 512
+    - 1024
+  modgd:
+    alpha: 0.4
+    gamma: 0.9

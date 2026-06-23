@@ -1,132 +1,60 @@
-# configs/train_config.yaml
-
 training:
-
   seed: 42
-
   epochs: 300
-
   batch_size: 2
-
   num_workers: 2
-
   pin_memory: false
-
   persistent_workers: false
-
   prefetch_factor: 2
-
   shuffle: true
-
   drop_last: true
-
-
 optimizer:
-
   type: adamw
-
   lr: 0.0005
-
   weight_decay: 0.0001
-
-
 scheduler:
-
   type: cosine
-
-  min_lr: 0.000001
-
+  min_lr: 1.0e-06
   warmup_epochs: 10
-
-
 gradient:
-
   clip_norm: 3.0
-
-
 mixed_precision:
-
   enabled: true
-
-
 checkpoint:
-
   save_every: 5
-
   keep_last: 5
-
-
 early_stopping:
-
   enabled: true
-
   patience: 100
-
-
 stage_training:
-
   stage1_epochs: 50
-
   stage2_epochs: 100
-
   stage3_epochs: 150
-
   stage4_epochs: 200
-
-
 beta_scheduler:
-
   enabled: true
-
   type: cyclical
-
   warmup_epochs: 40
-
   cycle_length: 40
-
   min_scale: 0.05
-
   cyclical_factors:
-
-    - excitation
-
-    - fidelity
-
-
+  - excitation
+  - fidelity
 latent_monitor:
-
   enabled: true
-
   monitor_every: 1
-
   collapse_threshold: 0.01
-
   variance_threshold: 0.05
-
-
 losses:
-
   reconstruction:
-
     l1_weight: 1.0
-
     mse_weight: 1.0
-
     phase_derivative_weight: 0.25
-
     von_mises_weight: 0.25
-
-    phase_continuity_weight: 0.10
-
-
+    phase_continuity_weight: 0.1
 staged_activation:
-
   enabled: true
-
   phase_start: 0.05
-
   kl_start: 0.15
-
   orthogonality_start: 0.35
-
-  tc_start: 0.50
+  tc_start: 0.5

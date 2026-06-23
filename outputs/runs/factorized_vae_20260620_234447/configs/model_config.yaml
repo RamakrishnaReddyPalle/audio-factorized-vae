@@ -1,0 +1,66 @@
+factorized_model:
+  feature_dim: 256
+  transformer_dim: 256
+  conformer_dim: 256
+  tcn_dim: 256
+  attention_heads: 8
+  dropout: 0.1
+betas:
+  content: 1
+  speaker: 2
+  environment: 16
+  excitation: 4
+  fidelity: 1
+model:
+  latent_dims:
+    content: 64
+    speaker: 64
+    environment: 96
+    excitation: 32
+    fidelity: 128
+  content_encoder:
+    in_channels: 3
+    hidden_dim: 256
+    freq_bins: 513
+  speaker_encoder:
+    in_channels: 3
+    hidden_dim: 256
+    freq_bins: 513
+  environment_encoder:
+    in_channels: 3
+    hidden_dim: 256
+    freq_bins: 513
+  excitation_encoder:
+    in_channels: 1
+    hidden_dim: 128
+    freq_bins: 513
+  multi_resolution:
+    input_channels: 6
+    hidden_dim: 256
+    num_scales: 3
+  fidelity_encoder:
+    hidden_dim: 256
+    freq_bins: 513
+    transformer_layers: 6
+    attention_heads: 8
+    latent_dim: 128
+losses:
+  reconstruction:
+    l1_weight: 1.0
+    mse_weight: 0.5
+    spectral_weight: 2.0
+  factorvae:
+    gamma: 1.0
+  orthogonality:
+    weight: 0.5
+  contrastive:
+    temperature: 0.07
+    weight: 1.0
+  environment:
+    weight: 1.0
+  kl:
+    content: 0.01
+    speaker: 0.03
+    environment: 0.07
+    excitation: 0.04
+    fidelity: 0.01

@@ -1,0 +1,28 @@
+{
+  "os": "Windows-10-10.0.26200-SP0",
+  "python": "CPython 3.11.15",
+  "startedAt": "2026-06-22T13:27:15.611224Z",
+  "program": "d:\\IITG\\Projects\\audio_factor_disentanglement_v2\\notebooks\\08_full_training.ipynb",
+  "codePath": "d:\\IITG\\Projects\\audio_factor_disentanglement_v2\\notebooks\\08_full_training.ipynb",
+  "codePathLocal": "notebooks\\08_full_training.ipynb",
+  "git": {
+    "remote": "https://github.com/RamakrishnaReddyPalle/audio-factorized-vae.git",
+    "commit": "4290affe28b4234290d7b0372806259e6f562ff1"
+  },
+  "email": "prkr2048@gmail.com",
+  "root": "d:\\IITG\\Projects\\audio_factor_disentanglement_v2",
+  "host": "Ram",
+  "executable": "c:\\Users\\Dell\\.conda\\envs\\betavae\\python.exe",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "1000068870144",
+      "used": "765043838976"
+    }
+  },
+  "memory": {
+    "total": "34081640448"
+  },
+  "writerId": "wcfowurta18wntn0d204vzr99a5kk56w"
+}
