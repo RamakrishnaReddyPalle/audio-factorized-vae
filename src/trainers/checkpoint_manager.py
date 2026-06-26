@@ -13,7 +13,8 @@ class CheckpointManager:
 
     def __init__(
         self,
-        project_root
+        project_root,
+        checkpoint_dir=None
     ):
 
         self.project_root = Path(
@@ -56,16 +57,24 @@ class CheckpointManager:
             ]
         )
 
-        self.checkpoint_dir = (
+        if checkpoint_dir is None:
 
-            self.project_root
-            /
-            data_cfg[
-                "outputs"
-            ][
-                "checkpoint_dir"
-            ]
-        )
+            self.checkpoint_dir = (
+
+                self.project_root
+                /
+                data_cfg[
+                    "outputs"
+                ][
+                    "checkpoint_dir"
+                ]
+            )
+
+        else:
+
+            self.checkpoint_dir = Path(
+                checkpoint_dir
+            )
 
         self.checkpoint_dir.mkdir(
 
