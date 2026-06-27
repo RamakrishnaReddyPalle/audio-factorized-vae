@@ -1,3 +1,5 @@
+# configs/feature_config.yaml
+
 feature_extraction:
 
   sample_rate: 16000
